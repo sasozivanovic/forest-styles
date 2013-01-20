@@ -1,0 +1,61 @@
+\ProvidesPackage{forest-animate}[2013/01/20]
+\RequirePackage{forest}[2013/01/20]
+\RequirePackage{animate}
+
+%%% cumulative animation
+%%% - must be done by producing all the frame-boxes in advance, since
+%%%   animate's \newframe command introduces a TeX group
+%%% - frames are controlled "node-wise"
+%%% - after changing node's properties between frames, the node
+%%%   usually needs to be re-typeset; this is done automatically, but
+%%%   (i) doesn't cover all the cases (e.g. if a propagator is used to
+%%%   modify some other node) and (ii) can be turned off using
+%%%   "animate don't autotypeset".
+
+\forestset{
+  animate/.style 2 args={%
+    declare keylist={frames}{},
+    draw tree stage/.style={%
+      TeX={\def\nframes{0}},
+      for root'={for last leaf={frames=draw frame}},
+      process keylist=frames,
+      TeX={%
+        \begin{animateinline}[#1]{#2}
+          \multiframe{\nframes}{iframen=0+1}{%
+          \expandafter\box\csname framebox\iframen\endcsname
+          }%
+        \end{animateinline}
+      },
+    },
+  },
+  animate typeset node/.style={typeset node},
+  animate don't autotypeset/.style={animate typeset node/.style={}},
+  frame/.style 2 args={
+    frames={delay n={#1}{#2,animate typeset node}},    
+  },
+  draw frame/.style={
+    TeX={\expandafter\locbox\csname framebox\nframes\endcsname},
+    draw tree box/.expanded=\csname framebox\nframes\endcsname,
+    TeX={\edef\nframes{\number\numexpr\nframes+1 }},
+    for root'=draw tree',
+    if have delayed={delay=draw frame}{}
+  },
+}
+
+%%% non-cumulative animation
+%%% - easier on memory (no boxes)
+%%% - controlled centrally, not node-wise (but this could be reworked)
+%%% - the real question is: should this mechanism be included in the
+%%%   style as well? Will anybody ever need it?
+\forestset{
+  new frame/.style={draw tree',TeX={\newframe}},
+  animate non-cumulative/.style n args=3{
+    draw tree stage/.style={%
+      TeX={\begin{animateinline}[#1]{#2}},%
+      for root'=new frame,%
+      #3,%
+      for root'=draw tree,
+      TeX={\end{animateinline}}%
+    },
+  },
+}

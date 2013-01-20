@@ -1,0 +1,65 @@
+\documentclass{article}
+\usepackage{forest-animate}
+
+\begin{document}
+\centering
+
+\section{Cumulative animation}
+
+\begin{forest}
+  animate={controls}{1}
+  [VP
+    [V]
+    [DP,phantom,frame=3{not phantom,for children={fill=white,typeset node}}
+      [D,frame=1{fill=yellow}]
+      [NP,frame=2{fill=yellow}]
+    ]
+  ]
+\end{forest}
+
+\bigskip\bigskip\bigskip
+
+\begin{forest}
+  animate={controls}{10}
+  [root,repeat={15}{append={[,
+      content/.pgfmath=n,
+      child anchor=north,
+      frame/.wrap pgfmath arg={{####1}{text=red,edge=red}}{n},
+      frame/.wrap pgfmath arg={{####1}{text=black,edge=black}}{n()+n_children("!u")}
+      ]}}]
+\end{forest}
+
+\bigskip\bigskip\bigskip
+
+% it's easy to program consecutive frames: use "delay"!
+\begin{forest}
+  animate={controls}{10}
+  [root,repeat={15}{append={[,
+      content/.pgfmath=n,
+      child anchor=north,
+      frame/.wrap pgfmath arg={{####1}{text=red,edge=red,delay={text=blue,typeset node,edge=blue}}}{n},
+      ]}}]
+\end{forest}
+
+\bigskip\bigskip\bigskip
+
+\section{Non-cumulative animation}
+
+\begin{forest}
+  animate non-cumulative={controls}{1}{
+    for root'={for tree={
+        content=\textbf{####1},
+        typeset node,
+        for root'=new frame,
+      }}
+  },
+  [VP[V][DP[D][NP]]]
+\end{forest}
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
