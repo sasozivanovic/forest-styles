@@ -1,0 +1,35 @@
+\ProvidesPackage{forest-decisiontree}[2013/01/20]
+\RequirePackage{forest}[2013/01/20]
+
+\def\getfirst#1;#2\endget{#1}
+\def\getsecond#1;#2\endget{#2}
+\forestset{
+  declare toks={decision}{},
+  declare keylist={decision options}{midway},
+  anchors/.style={anchor=#1,child anchor=#1,parent anchor=#1},
+  nomath/.style={content format=\forestoption{content}},
+  dot/.style={tikz+={\fill (.child anchor) circle[radius=#1];}},
+  dot/.default=2pt,
+  decision on left/.style={decision options={auto=left,anchor=east}},
+  decision on right/.style={decision options={auto=left,anchor=west}},
+  decision tree/.style n args=3{
+    anchors=south, outer sep=2pt,
+    for tree={
+      s sep=#1,l=#2,dot=#3,
+      if n children=0{anchors=north}{
+        if n=1{anchors=south east}{anchors=south west}},
+      content format={$\forestoption{content}$},
+      if n=1{decision on left}{decision on right}
+    },
+    delay={for descendants={
+        decision/.expanded/.wrap pgfmath arg={\getsecond##1\endget}{content},
+        content/.expanded/.wrap pgfmath arg={\getfirst##1\endget}{content},
+    }},
+    before drawing tree={
+      for descendants={
+        edge label/.expanded={node[\forestoption{decision options}]{\strut$\forestoption{decision}$}},
+      }
+    }
+  },
+  decision tree/.default={0.5em}{8ex}{2pt}
+} 

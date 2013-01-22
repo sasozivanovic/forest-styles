@@ -1,0 +1,41 @@
+\documentclass{minimal}
+\usepackage{forest-decisiontree}
+
+\begin{document}
+
+\begin{forest} decision tree
+  [N,nomath
+    [I;{p_1=0.5},nomath,decision options={yshift=4pt}
+      [{5,1};a]
+      [II;b,nomath
+        [{1,2};m]
+        [{2,3};n]
+      ]
+    ]
+    [II;{p_2=0.5},nomath,decision options={yshift=4pt}
+      [;c
+        [{1,0};z]
+        [{2,2};t]
+      ]
+      [;d
+        [{3,1};z]
+        [{0,0};t]
+      ]
+    ] {\draw[dashed](!1.anchor)--(!2.anchor) node[pos=0.5,above]{I};}
+  ]
+\end{forest}
+
+\begin{forest} decision tree={3em}{8ex}{2pt}
+  [[;a[;\tau^*[;a[;\tau^*
+   [;b[;\tau^*[;b[;\tau^*[;j]]]]]
+   [;b[;\tau^*,for tree={decision on right}
+     [;b[;\tau^*[;k]]]]]
+  ]]]]]
+\end{forest}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
