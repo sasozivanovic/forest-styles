@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{forest-animate}
+\pagestyle{empty}
 
 \begin{document}
 \centering
@@ -39,6 +40,19 @@
       child anchor=north,
       frame/.wrap pgfmath arg={{####1}{text=red,edge=red,delay={text=blue,typeset node,edge=blue}}}{n},
       ]}}]
+\end{forest}
+
+\bigskip\bigskip\bigskip
+
+\begin{forest}
+  animate={controls}{1}
+  [What,frame=3{content=SO WHAT!,red}
+    [if,for descendants={phantom,frame=1{not phantom}}
+      [the][tree][size]
+    ]
+    [changes?,phantom,frame=2{not phantom}
+    ]
+  ]
 \end{forest}
 
 \bigskip\bigskip\bigskip

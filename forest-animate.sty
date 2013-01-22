@@ -17,12 +17,32 @@
     declare keylist={frames}{},
     draw tree stage/.style={%
       TeX={\def\nframes{0}},
-      for root'={for last leaf={frames=draw frame}},
+      for root'={if n children=0{frames=draw frame}{for last leaf={frames=draw frame}}},
       process keylist=frames,
       TeX={%
+        \def\framen{0}%
+        \def\animateminx{16000pt}%
+        \def\animateminy{16000pt}%
+        \def\animatemaxx{-16000pt}%
+        \def\animatemaxy{-16000pt}%
+        \loop
+        \ifnum\framen<\nframes\relax
+          \pgfmathsetlengthmacro{\animateminx}{min(\animateminx,\csname animateminx\framen\endcsname)}%
+          \pgfmathsetlengthmacro{\animateminy}{min(\animateminy,\csname animateminy\framen\endcsname)}%
+          \pgfmathsetlengthmacro{\animatemaxx}{max(\animatemaxx,\csname animatemaxx\framen\endcsname)}%
+          \pgfmathsetlengthmacro{\animatemaxy}{max(\animatemaxy,\csname animatemaxy\framen\endcsname)}%
+          \edef\framen{\number\numexpr\framen+1}%
+        \repeat
         \begin{animateinline}[#1]{#2}
           \multiframe{\nframes}{iframen=0+1}{%
-          \expandafter\box\csname framebox\iframen\endcsname
+            \edef\animatemarshal{%
+              \noexpand\begin{minipage}{\the\dimexpr\animatemaxx-\animateminx\relax}%
+                \noexpand\vspace*{\the\dimexpr\animatemaxy-\csname animatemaxy\iframen\endcsname\relax}%
+                \noexpand\hspace*{\the\dimexpr\csname animateminx\iframen\endcsname-\animateminx}%
+                \noexpand\expandafter\box\noexpand\csname framebox\iframen\endcsname
+                \noexpand\vspace*{\the\dimexpr\csname animateminy\iframen\endcsname-\animateminy}%
+              \noexpand\end{minipage}%
+            }\show\animatemarshal\animatemarshal
           }%
         \end{animateinline}
       },
@@ -36,8 +56,14 @@
   draw frame/.style={
     TeX={\expandafter\locbox\csname framebox\nframes\endcsname},
     draw tree box/.expanded=\csname framebox\nframes\endcsname,
-    TeX={\edef\nframes{\number\numexpr\nframes+1 }},
+    tikz+={%
+      \csxdef{animateminx\nframes}{\the\pgf@picminx}%
+      \csxdef{animateminy\nframes}{\the\pgf@picminy}%
+      \csxdef{animatemaxx\nframes}{\the\pgf@picmaxx}%
+      \csxdef{animatemaxy\nframes}{\the\pgf@picmaxy}%
+    },
     for root'=draw tree',
+    TeX={\edef\nframes{\number\numexpr\nframes+1}},
     if have delayed={delay=draw frame}{}
   },
 }
