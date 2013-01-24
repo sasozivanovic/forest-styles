@@ -1,8 +1,8 @@
 \ProvidesPackage{forest-decisiontree}[2013/01/20]
 \RequirePackage{forest}[2013/01/20]
 
-\def\getfirst#1;#2\endget{#1}
-\def\getsecond#1;#2\endget{#2}
+\def\getfirst#1;#2\endget{\unexpanded{#1}}
+\def\getsecond#1;#2\endget{\unexpanded{#2}}
 \forestset{
   declare toks={decision}{},
   declare keylist={decision options}{midway},

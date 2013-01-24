@@ -1,5 +1,6 @@
 \documentclass{minimal}
 \usepackage{forest-decisiontree}
+\usepackage{xcolor}
 
 \begin{document}
 
@@ -26,7 +27,7 @@
 \end{forest}
 
 \begin{forest} decision tree={3em}{8ex}{2pt}
-  [[;a[;\tau^*[;a[;\tau^*
+  [[;a[;\tau^*[;a[;\tau^*\color{blue}{test}
    [;b[;\tau^*[;b[;\tau^*[;j]]]]]
    [;b[;\tau^*,for tree={decision on right}
      [;b[;\tau^*[;k]]]]]
