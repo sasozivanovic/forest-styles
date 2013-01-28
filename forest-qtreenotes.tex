@@ -1,0 +1,1095 @@
+% Demo and documentation for qtree.sty, the front end to the 
+% Qobitree tree-drawing package
+
+% (LaTeX)
+
+\documentclass[11pt,a4paper]{ltxdoc}
+
+% You can safely comment this out if you don't have hyperref
+\usepackage[bookmarks]{hyperref}
+
+% We stick with the text width set by ltxdoc.cls
+
+% Fairly-balanced A4 margins:
+\topmargin=-0.25in
+\textheight=9in
+
+\parskip=4pt
+\parindent=0pt
+\raggedbottom
+
+\DeleteShortVerb{\|}
+\AtBeginDocument{\OnlyDescription}   % There's no code, anyway
+
+% Like \DescribeMacro, but arbitrary text
+\def\marginpost#1{\leavevmode \marginpar{~\hfill\texttt{#1}}\ignorespaces}
+
+% The name of the package, capitalized or not.
+\def\QT{\textsf{\emph{Qtree}}}
+\def\Qt{\textsf{\emph{qtree}}}
+
+\def\pstyle#1{\textsf{#1}} % style filenames
+
+\def\argplain#1{\textit{$\langle$#1$\rangle$}} % Like \marg, but without { }
+
+
+\usepackage{forest-qtree}
+
+% Break page unless requested amount of space remains
+% Must be used BETWEEN paragraphs
+%
+\makeatletter
+\def\vneed#1{\par \penalty-100 \begingroup % preserve \dimen@, \dimen@i
+   \ifdim\prevdepth>\maxdepth \dimen@i\maxdepth \else \dimen@i\prevdepth\fi
+   \kern-\dimen@i
+   \dimen@\pagegoal \advance\dimen@-\pagetotal % space left
+   \ifdim #1>\dimen@ \vfil \eject \fi 
+   \kern\dimen@i
+   \endgroup}
+\makeatother
+
+
+\begin{document}
+
+\begin{center}
+\Large {\bf Qtree, a \LaTeX\ tree-drawing package}\footnote{
+Thanks to Jeff Siskind for permission to distribute the QobiTree code.
+Please direct comments to Alexis Dimitriadis
+(\emph{alexis@ling.upenn.edu}).} 
+\large
+\\[8pt] Jeffrey Mark Siskind (tree drawing and core package)\\[4pt] 
+ Alexis Dimitriadis (parser and extensions) \\[8pt]
+Version \qTreeVersion, 12 December 2008
+ \\[10pt] \large % For the paragraph spacing
+{\bf compiled by {\tt forest-qtree}\\(an emulator for {\tt qtree} in {\tt
+  forest} v1.03)}
+\\[4pt] Sa\v so \v Zivanovi\'c
+\\ 28 January 2013
+\end{center}
+
+\section{Overview}
+
+The \QT\ package consists of QobiTree, a package of tree-drawing
+macros written by Jeff Siskind, and a front end that allows trees to be
+specified in bracket notation, using whitespace to separate tokens.  Tree
+nodes can have labels of any size or complexity, and are automatically
+arranged on the page, usually with quite good results.  Provisions exist for
+fine-tuning the default layout.  The front end also centers trees (by default)
+and provides some other nice features. 
+
+A simple tree may look like this,
+\begin{verbatim}
+\Tree [.S This [.VP [.V is ] \qroof{a simple tree}.NP ] ]
+\end{verbatim}
+which produces:
+\par
+\Tree [.S This [.VP [.V is ] \qroof{a simple tree}.NP ] ]
+\bigskip
+
+The node labels in trees may be quite complicated; they may contain font
+changes and math-mode text, line breaks introduced with \verb|\\| (which
+produce centered lines), etc. The trees produced are constrained to a
+maximum depth of 20 levels, with a maximum of five branches at any one node.
+\QT\ automatically adjusts for the
+width and height of tree labels, and is pretty good at arranging nodes on
+the page.
+
+Trees are defined using a version of the bracket notation familiar to
+linguists.  Tree elements are delimited by white space; braces can be
+used to enclose multi-word labels.  \QT\ does not rely on
+\verb|\catcode| changes for its operation, allowing trees to be
+included in footnotes and other moving environments without problems. (But
+see the discussion of \verb|\automath| below).
+
+Thanks to recent improvements in \LaTeX's support for PDF, \Qt\ can now
+produce good-looking graphics for both DVI/PostScript and PDF output. By default, \Qt\ will load the package \pstyle{pict2e.sty}, which improves the native picture-drawing facilities of \LaTeX\ and transparently supports both
+PostScript and PDF output.\footnote{%
+Earlier versions of \Qt\ loaded \pstyle{eepic.sty}, which does not work with PDF. You can still use \Qt\ with \pstyle{eepic} if you wish; see section \ref{s:options}.
+} 
+This version of Qtree also provides hooks for customization, and
+contains many small enhancements and corrections of minor glitches.
+
+Many of the new features were inspired by questions or requests from \Qt\
+users. Thank you all for your contributions to \Qt, and keep them coming!
+
+
+\subsection{New features}
+
+\begin{enumerate}
+  \item Full PDF and PostScript support using 
+  \pstyle{pict2e.sty}. This package, which extends the limited capabilities
+  of the standard \verb|picture| environment, was planned long ago by the
+  \LaTeX\ developers but has only recently been released. It provides
+  enhanced drawing quality for both DVI and PDF output.
+    
+\item Customization hooks allow easy adjustments to the default style of
+  leaf and branch labels, and to a number of other aspects of tree
+  appearance.
+
+\item Extraneous whitespace around trees has been removed.
+
+\item Reorganized and rewritten code is easier to customize (with a moderate
+  amount of \LaTeX\ hacking skills).
+
+\item The documentation has been extended and reorganized. An FAQ section
+  has been added with explanations of various frequently requested 
+  tasks.
+
+\item Several functions have been added, including a ``balancing'' command
+ that will produce trees with more evenly sized branches.
+
+\item \QT\ is now (finally) available on CTAN. 
+  
+\end{enumerate}
+
+
+\subsection{Home page}
+
+The \Qt\ home page is at:
+
+\begin{center}
+http://www.ling.upenn.edu/advice/latex/qtree/.
+\end{center}
+
+
+
+
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Invocation}
+
+\pstyle{Qtree.sty} is a \LaTeX\ package. It should be installed in a
+directory of style files, and included with the \LaTeXe\ command 
+\verb|\usepackage{qtree}|.
+
+\subsection{Package options}
+\label{s:options}
+
+\DescribeMacro{[center]} Horizontally center trees on the line. This is the
+default behavior. (See also the commands \verb|\qtreecentertrue| and
+\verb|\qtreecenterfalse|, below). %in section \ref{s:params}).
+
+\DescribeMacro{[nocenter]} Do not center trees. Trees are positioned on the
+page like ordinary text, and can be manually aligned to the left or right
+(or centered).
+
+\DescribeMacro{[noload]} Suppress automatic loading of the graphics
+extensions library \pstyle{pict2e.sty}. \pstyle{Pict2e} supports both
+PostScript and PDF graphics, but automatic loading can be inhibited if it
+causes problems, or if you want to pass your own options to \pstyle{pict2e}.
+
+Earlier versions of \Qt\ used \pstyle{eepic.sty} as the graphics enhancement library; if you want to use it instead of \pstyle{pict2e}, invoke \Qt\ with the package option \texttt{[noload]} and load \pstyle{eepic.sty} manually (using \verb|\usepackage{eepic}|).
+
+
+\subsection{Customization parameters}
+\label{s:params}
+
+\DescribeMacro{\qtreecentertrue}
+\DescribeMacro{\qtreecenterfalse}
+Trees are horizontally centered on the line by default, but you can turn
+centering on and off at any point with these commands. They obey the usual
+scoping rules; if used inside an \verb|enumerate| environment, for example,
+their effect will only last until the end of that environment. (See also the
+\texttt{[(no)center]} package options).
+
+\paragraph{Length parameters}
+The following macros can be redefined to customize various aspects of tree
+construction. (Note that they are all \emph{macros,} not counters).
+
+\DescribeMacro{\qtreepadding} The amount of whitespace inserted around
+labels and leaf nodes as the tree is built. The default is the value of the
+\LaTeX\ parameter \cmd{\tabcolsep} (usually set to \texttt{6pt}). It is safe
+to change the value of this macro for different trees, but modifying it in
+the middle of a tree could lead to somewhat strange behaviour.
+
+\DescribeMacro{\qroofpadding}
+The amount of whitespace inserted around text placed under a
+roof; that is, the width of the ``eaves'' of the roof that extend beyond the
+text. The default is \texttt{0.4em.}
+
+\DescribeMacro{\qtreeunaryht}
+The height of the line connecting the labels of non-branching
+nodes to their leaves. The default is \texttt{2ex}. 
+
+\paragraph{Customization hooks}
+The following macros are empty by default, but they can be defined to
+customize the appearance of labels and leaves. They can safely change font
+styles etc., since they are invoked inside another environment.
+
+\DescribeMacro{\qtreeinithook}  Called at the beginning
+of each tree, before processing begins. It can be used for definitions or
+modifications of commands that should only be in effect during tree
+construction. (For example, to use the \verb|\small| font size for all trees).
+
+\DescribeMacro{\qtreefinalhook} Called after the completed tree has been
+printed out; it might be used, for example, to end an environment opened
+with \verb|\qtreeinithook|.
+
+\DescribeMacro{\qleafhook}
+\DescribeMacro{\qlabelhook}
+\verb|\qleafhook| is called for each leaf node, and \verb|\qlabelhook| for
+each non-terminal label.
+They can be used to define default fonts, etc., for
+text in these places. Their use is explained in section \ref{s:ftune}. 
+
+\vneed{2in}
+\section{Basic usage}
+
+\subsection{Tree syntax}
+
+\DescribeMacro{\Tree}
+The front end of \Qt\ reads a tree description
+written in the familiar (to linguists) bracket notation.  Tree labels are
+delimited by whitespace.  To make a multi-word node label, enclose it in
+braces. Note also that 
+\TeX\ discards the spaces immediately after {\it control
+sequences\/} (commands whose name consists of a backslash followed by
+letters); hence if a node label ends with a control sequence, like
+\verb|\ldots| in the following example, you need to enclose it in braces
+too.
+
+\Tree [.CP [.{\sc Spec}(CP) {which car} ] {\ldots} ]
+\begin{verbatim}
+\Tree [.CP [.{\sc Spec}(CP) {which car} ] {\ldots} ]
+\end{verbatim}
+
+\subsection{Label matching}
+For convenience, a label for a non-terminal node can be written either after
+the left bracket or after the right bracket corresponding to that node.  Thus
+the following are equivalent:
+\begin{verbatim}
+\Tree [.S when [.NP the cat ]    sleeps ]
+\Tree [.S when [    the cat ].NP sleeps ]
+\end{verbatim}
+To help keep braces matched when editing large trees, the front end allows
+the option of writing a label after both the left and the right bracket of
+the same node, as shown for the node NP below.  In this case the two labels
+provided must be identical, token for token.
+\begin{verbatim}
+\Tree [.S when [.NP the cat ].NP sleeps ]
+\end{verbatim}
+
+\vneed {2cm}
+\subsection{Roofs}
+\DescribeMacro{\qroof}
+\DescribeMacro{\qroofx}
+\DescribeMacro{\qroofy}
+The command \verb|\qroof| draws a triangular ``roof'' above a phrase that is
+treated as a unit. It can appear anywhere a {\it leaf\/} can appear.  The slope
+of the roof is equal to the ratio \verb|\qroofy / \qroofx| (these counters may
+be reset to any pair of integers between zero and six; the default is 1/3).
+
+To create a roof
+labeled {\it NP\/} over the phrase {\it the book,} write
+\begin{flushleft}
+\begin{verbatim}
+      \qroof{the book}.NP
+\end{verbatim}
+%\vspace{-0.75cm}
+(disabled) %\hfil\hfil \leaf{\qroof{the book}.NP } \qobitree
+\end{flushleft}
+
+If the phrase contains line breaks introduced with \verb|\\|, the resulting
+lines are flush left, not centered. Again, it is possible for the ``phrase''
+to be a construction of arbitrary complexity; but the syntax of
+\verb|\qroof| does not allow further branches of the tree to appear under
+the roof, since a roof is meant to cover material that is not
+analyzed.\footnote{%
+  \QT\ internally implements a roof as a large leaf.
+} % END FOOTNOTE
+See also the discussion of roofs in the following section.
+
+% Although the parsing messes up, it IS possible to work qroof into a
+% non-terminal label:
+% \Tree [.A this [.{\qroof{Cheat}.ME } x [ below ] ]]
+
+\vneed{3cm}
+\subsection{Branching without labels}
+
+Sometimes we want to draw an abbreviated tree without a label on some or all
+intermediate nodes. \QT\ will handle such trees correctly:
+
+% \medskip
+% \Tree [ [.np Eve ] [ [.(np$\backslash$s)/np ate ] [ [.np/n the ] [.n apple ]
+% ]]] 
+
+\medskip
+\Tree [.CP Spec(CP) [ C^0 [.IP I^0 Comp(IP) ] ] ] 
+\begin{verbatim}
+\Tree [.CP Spec(CP) [ C^0 [.IP I^0 Comp(IP) ] ] ] 
+\end{verbatim}
+
+Starting with qtree version 3.1b, a roof without a label will be attached to the tree branches above it. Note that the period between the roof text and the label does need to be given. If you use this option, you will probably want to adjust the roof angles so that they match the slope of the branch above it. For binary branching, the correct values are \verb|\qroofx=2|, \verb|\qroofy=1|.
+
+\begin{verbatim}
+\qroofx=2
+\qroofy=1
+\Tree [.S This [ [.V is ] \qroof{a simple tree}. ] ]
+\end{verbatim}
+
+\qroofx=2
+\qroofy=1
+\Tree [ [.NP This ] [ [.V is ] \qroof{an unlabeled tree}. ] ]
+
+
+
+
+
+
+\subsection{Subscripts, superscripts and primes}
+\label{s:super}
+
+\QT\ defines the following formatting commands in such a way that they are
+only in effect during tree construction. They have their regular meaning (or
+none) in the rest of the document.
+
+\DescribeMacro{\automath}
+\DescribeMacro{\noautomath}
+Trees are constructed in a special environment in which things like
+\verb|NP_i|, \verb|N^0|, automatically format their subscripts or
+superscripts in math mode, giving NP$_i$ and N$^0$, respectively.  The
+command that arranges this is called \verb|\automath|, and can also be enabled outside the tree environment, if desired. (It is turned off with
+\verb|\noautomath|).
+
+Because this feature relies on
+\verb|\catcode| changes for its operation, \cmd{\automath} has no 
+effect when called inside footnotes or floats; in such trees, all sub- or
+superscripts should be explicitly placed in math mode, as you would ordinarily do. Alternately, you can turn on \cmd{\automath} before entering the footnote or float.
+
+
+\vneed{1in}
+\marginpost{\cmd{\0},\cmd{\1},\cmd{\2}}
+{\makeatletter \qtreeprimes@internal
+As a further convenience, constructions like \verb|X$'$|, producing X\1, can
+be abbreviated \verb|X\1|.  (If you simply type \verb|X'| you get X', with an
+apostrophe rather than a prime).  There is also \verb|X\2|, producing X\2, and
+\verb|X\0|, producing X\0.  These commands also arrange for subtle
+improvements in the centering of labels that use them, by using \cmd{\rlap}
+to set the superscript.}
+
+\DescribeMacro{\qtreeprimes}
+\qtreeprimes
+If you want to use commands like \cmd{\1} in your text (outside of trees),
+you can cause all three to be defined by putting the command 
+\cmd{\qtreeprimes} in your preamble. The version defined in this way does
+not use \cmd{\rlap} around the superscripts, since this is inappropriate for
+running text. Thus you get X\1, X\2, and X\0. (Notice the position of the
+punctuation compared to the previous paragraph). The versions that use
+\cmd{\rlap} will still be used inside trees. 
+
+\bigskip
+\vneed{2in}
+Here is an example using some of these features:
+
+\label{roof}
+\Tree 
+[.IP [ Roses ].NP_i [.I\1 [ are ].I\0 
+   [.VP t_i [ [ going ].V\0 \qroof{out of style}.PP ].V\1 ].VP 
+].I\1 ]
+\begin{verbatim}
+\Tree 
+[.IP [ Roses ].NP_i [.I\1 [ are ].I\0 
+   [.VP t_i [ [ going ].V\0 \qroof{out of style}.PP ].V\1 ].VP 
+].I\1 ]
+\end{verbatim}
+Granted, by the time the examples get this big, the bracketed format isn't
+all that readable; but it's certainly no worse than any other tree format,
+and you can add white space to make it a little better.
+
+\subsection{Customizing text appearance}
+\label{s:ftune}
+
+\DescribeMacro{\qleafhook}
+\DescribeMacro{\qlabelhook}
+The macros \cmd{\qleafhook} and \cmd{\qlabelhook} don't do anything by default,
+but they can be defined to control the appearance of the text in
+leaves and in branch labels, respectively. The macros can be defined
+either with or without an argument; the following examples illustrate both options.
+\begin{verbatim}
+  \newcommand{\qlabelhook}{\bf}
+  \newcommand{\qleafhook}[1]{\emph{#1}}
+  \newcommand{\qlabelhook}{\framebox}
+\end{verbatim}
+
+\paragraph{Details:} For some effects it is important to know that
+  the argument of 
+the hook is not just the text of the leaf or label, but a small
+\texttt{tabular} environment (which inserts whitespace controlled by
+\cmd{\qtreepadding}). In simplified form, the code that uses the hooks looks
+like this (where \verb|#1| is the text of the branch label).
+
+\begin{verbatim}
+  ... \qlabelhook {\begin{tabular}[t]{c} #1 \end{tabular}}
+\end{verbatim}
+
+This arrangement makes it possible for leaves and labels to contain line
+breaks (\verb|\\|). But one consequence is that the hooks cannot
+put their argument in math mode, since a table cannot appear inside math
+mode. Fortunately, there is a simple work-around: We get the same effect by
+making
+\Qt\ use the \verb|array| environment in place of \verb|tabular|.\footnote{%
+  This works because \texttt{tabular} and \texttt{array} are internally
+  implemented identically, except for switching on math mode in \texttt{array}.
+} % END FOOTNOTE
+ To put only
+branch labels (not leaves) in math mode, define the following hook:
+\begin{verbatim}
+\def\qlabelhook{\let\tabular=\array \let\endtabular=\endarray}
+\end{verbatim}
+
+
+
+\subsection{Escaping the parser}
+
+\marginpost{!-escapes}
+For fine control of the tree-building process, we must sneak certain
+directives past the front end.  If a
+word begins with an exclamation mark, the entire word (i.e., up to the next
+space) will be passed through unchanged, except for stripping off the ``!''.
+Braces can be used to pass through larger groups.  This is most often used
+for the manual width-adjustment commands
+\verb|\faketreewidth| and \verb|\qsetw| (see below), but can also be
+used to override various \Qt\ settings for part of the tree.  Note that
+\verb|\qroof| is part of the tree syntax, and should {\it not\/}  be
+preceded by an exclamation mark.
+
+\subsection{Adjusting inter-node spacing}
+
+\DescribeMacro{\qsetw}
+The command \cmd{\qsetw}\marg{length} (where \argplain{length} might be
+\verb|0.5in|, \verb|36pt|, etc.) tells \Qt\ to override its default
+calculation of the width of the {\it just-finished\/} node (that's the leaf
+or branch ending just to the {\it left\/} of where the directive was
+issued), and instead consider that width to be \argplain{length}.
+
+\DescribeMacro{\faketreewidth}
+Similarly, 
+\cmd{\faketreewidth}\marg{text} sets the width of the last node to be
+equal to 
+the width of \argplain{text} (which again can contain `\verb|\\|' commands
+etc.) \argplain{text} is not actually typeset but is used just to compute the
+fake width of the most recently completed leaf or subtree.
+
+% For example, the default placement rules produce the tree labeled (2b) above.
+% By setting the width of the subtree headed by T to 1cm, we get the following:
+% 
+%  b.  \Tree[ A [.T {B\\ \em note} cc ].T !\qsetw{1cm} D ].S
+
+For example, the default placement rules would
+produce tree (a) below.  By setting the width of the subtree headed by B to
+\texttt{1cm}, we get tree (b).
+
+\begin{center}
+\qtreecenterfalse 
+\leavevmode\llap{a. }\Tree [.A [ a b c d ].B  C ]
+\hfil 
+\llap{b. }\Tree [.A [ a b c d ].B !\qsetw{1cm} C ]
+
+\end{center}
+\begin{verbatim}
+\Tree [.A [ a b c d ].B !\qsetw{1cm} C ]
+\end{verbatim}
+When you use \verb|\qsetw| or \verb|\faketreewidth| you are on your own. They
+can either shrink or enlarge the space taken by the node and may result in
+trees with overlapping labels. 
+
+
+\subsection{``Balanced'' trees}
+
+\DescribeMacro{\qbalance}
+Regular binary-branching trees often end up
+with smaller and smaller branches as you descend into the tree; you can see
+an example below. If you don't like this look, you can get
+``balanced'' trees by adjusting the width of the last leaf node. For a
+balanced tree, this should be exactly \emph{three} times as wide as the leaves on
+its left;\footnote{%
+  The geometrical justification for this is left as an exercise to the reader.
+} % END FOOTNOTE
+For binary-branching trees, the command \verb|\qbalance| can be used. It sets the width of the node just before it to be three times
+the width of the \emph{previous} node. If it does not do what you need,
+you'll need to set the correct width manually. In the example below, the
+width of the leaf \emph{``last''} is set to be three times the width of
+\emph{leaf$_3$.}  
+
+\begin{center}\small
+\qtreecenterfalse
+a. \Tree [.X leaf_1 [.Y leaf_2 [.Z leaf_3 last ] ] ]
+\hfil 
+b. \Tree [.X leaf_1 [.Y leaf_2 [.Z leaf_3 last !{\qbalance} ] ] ] 
+\end{center}
+\begin{verbatim}
+\Tree [.X leaf_1 [.Y leaf_2 [.Z leaf_3 last !{\qbalance} ] ] ]
+\end{verbatim}
+
+
+
+
+
+\vneed{1.5in}
+\section{Using qtree}
+\subsection{How to convert a tree to brackets}
+
+Reading or writing a complex tree in bracket notation is not terribly easy for
+humans; it helps to have an editor that can show matching braces as they are
+typed in.  The procedure described here should allow you to easily convert a
+tree to bracket notation.  If you don't have any difficulty with this, just
+skip this section and do it any way you want!
+
+\begin{enumerate}
+\item Draw the tree you want to enter on a piece of paper, so you can look at
+it. 
+
+\item Imagine that the tree is a large peninsula, and your pencil is a boat
+sailing around it.  Starting just to the left of the root node, move
+downwards, following the outline of the tree until you come back to the root
+node (on the right side, having moved counterclockwise around the tree),
+without crossing any of the tree's lines.
+
+\item \begin{enumerate}
+\item
+Every time you are at the left side of a non-terminal node, type a left
+bracket, and the label for that node.
+\item Every time you are
+at a leaf node, type in the contents of that node.
+\item
+Finally, every time you are on the right of a non-terminal node, type a right
+bracket (and the node name again, if you want to help keep them straight).
+\end{enumerate}
+
+\end{enumerate}
+
+To see this in practice, consider the following tree; in the variant on the
+right, the numbered subscripts show the order in which the brackets and
+labels are written.
+
+\bigskip
+\Tree [.A [.B [.C one ] [.D two ] ].B [.E three ] ].A
+%
+\Tree [.{[_1 A ]_{13}} 
+  [.{[_2 B ]_9} [.{[_3 C ]_5} one_4 ] [.{[_6 D ]_8} two_7 ] ] 
+	        [.{[_{10} E ]_{12}} three_{11} ] ]
+\par
+\medskip
+Accordingly, we would generate the tree by typing the following:
+
+{\center
+\verb|\Tree [.A [.B [.C one ] [.D two ] ].B [.E three ] ].A| \par}
+
+
+\subsection{Placing trees on the page}
+
+\paragraph*{Numbered examples etc.}
+A tree generated with \Qt\ can be placed in a numbered example environment,
+in footnotes or \verb|\parbox|es, inside math formulas, tables, pictures,
+etc. The tree nodes can themselves contain arbitrarily complex
+material---although, unfortunately, it is not possible to embed a recursive
+call to \Qt. If you need to do this, save the intermediate tree
+in a \verb|\box|. An example is shown in section \ref{s:embed}.
+
+Trees are centered horizontally on the line by default, but this feature can
+be turned off with \verb|\qtreecenterfalse| (see section \ref{s:params}).
+If you are not satisfied with the horizontal placement of the
+tree, you can adjust it by judicial use of \verb|\hskip|.\footnote{%
+  Earlier versions of \Qt\ inserted stray spaces in front of trees,
+  requiring frequent use of \texttt{\bslash hskip}. This problem has now been
+  fixed.
+} % END FOOTNOTE
+
+\QT\ attempts to align the topmost label of the tree with the baseline of
+the text, similarly to the effect of the [t] option for \verb|\parbox|
+alignment. To center trees vertically on the baseline, enclose the entire
+tree in a \texttt{tabular} environment. 
+%% \footnote{%
+%%   You may also want to suppress the padding that \texttt{tabular} normally
+%%   inserts, as follows:
+
+%%   \centerline{...} (Covered in the FAQ section)
+%% } % END FOOTNOTE
+
+% Here is an example
+% using the {\tt enumerate} environment, and the code to generate it.
+
+% \begin{enumerate} \item[(1)] a. \hskip-0.75in
+%     \Tree[.C [.Tns [.Neg [.Ind V [.Ind Ind Agr$_1$ ]] Neg ].Neg 
+%       [.Tns Agr$_2$ Tns ] ].Tns [.C C Agr$_3$ ] ]
+% \end{enumerate}
+% \begin{verbatim}
+% \begin{enumerate} \item[(1)] a. \hskip-0.75in
+%     \Tree[.C [.Tns [.Neg [.Ind V [.Ind Ind Agr_1 ]] Neg ].Neg 
+%       [.Tns Agr_2 Tns ] ].Tns [.C C Agr_3 ] ]
+% \end{enumerate}
+% \end{verbatim}
+
+
+\paragraph*{Side by side trees}
+Multiple trees, or text and trees, can be arranged side by side.  This can
+generally be done by just arranging commands one after another; it usually
+helps to turn off tree centering.  If necessary the positioning can be
+adjusted with \verb|\hskip|.
+\begin{enumerate}
+\qtreecenterfalse
+\item[(2)] a. \Tree [.S [.NP \'el\\he ]
+        [.VP [.V hizo\\made ] [.V decir\\say ] 
+             [.NP lo\\it ] [.NP a-mi\\me ]      ].VP ]
+  \hskip 0.3in
+  b.  \Tree[ A [.T {B\\ \em note} cc ].T D ].S
+\end{enumerate}
+\label{2b}
+\begin{verbatim}
+\begin{enumerate}
+\qtreecenterfalse
+\item[(2)] a. \Tree [.S [.NP \'el\\he ]
+        [.VP [.V hizo\\made ] [.V decir\\say ] 
+             [.NP lo\\it ] [.NP a-mi\\me ]      ].VP ]
+  \hskip 0.3in
+  b.  \Tree[ A [.T {B\\ \em note} cc ].T D ].S
+\end{enumerate}
+\end{verbatim}
+
+
+
+% \paragraph*{\it Trivia note:\/}
+% If you insist on placing trees in a \verb|\parbox|, here is how to do it.
+% Note the \verb|~|, called a {\it tie,\/} before \verb|\Tree| inside the
+% parbox; it keeps \LaTeX\ from breaking the line and placing the tree one
+% line too low.
+% \begin{enumerate}
+% \item \parbox[t]{2.4in}{ (a)~\Tree 
+%    [.VP [.NP (mud) ] [.V\1 [.V (get) ] [.PP {(on wall)} ]]] }
+% %
+% \parbox[t]{2in}{ (b)~\Tree 
+%  [.VP [.NP (screen) ] \qroof{V\qquad AP\\ \hfil(clear)~}.V\1 ] }
+% \end{enumerate}
+
+% \begin{verbatim}
+% \begin{enumerate}
+% \item \parbox[t]{2.4in}{ (a)~\Tree 
+%    [.VP [.NP (mud) ] [.V\1 [.V (get) ] [.PP {(on wall)} ]]] }
+% \parbox[t]{2in}{ (b)~\Tree 
+%  [.VP [.NP (screen) ] \qroof{V\qquad AP\\ \hfil(clear)~}.V\1 ] }
+% \end{enumerate}
+% \end{verbatim}
+
+\section{Advanced features}
+
+
+
+\subsection{Putting a frame around part of a tree}
+
+\DescribeMacro{\qframesubtree}
+The command \verb|\qframesubtree| will put a rectangular box
+(``frame'') around part of a tree. It should be placed just \emph{after} the
+closing bracket of the subtree that should be boxed. 
+
+\Tree [.IP [.NP Roses ] [ [.I^0 are ]
+    [.VP t [ [.V^0 turning ] [.NP pink ] ] ].VP !{\qframesubtree} ]]
+\begin{verbatim}
+\Tree [.IP [.NP Roses ] [ [.I^0 are ]
+    [.VP t [ [.V^0 turning ] [.NP pink ] ] ].VP !{\qframesubtree} ]]
+\end{verbatim}
+
+Only complete subtrees can be framed with this method. To enclose a single
+label node in a box, use a frame command directly. To box all
+labels or leaves, you can use the format customization hooks. For example,
+the following will put a box around every label:
+\begin{verbatim}
+  \renewcommand{\qlabelhook}[1]{\framebox{#1}}
+\end{verbatim}
+
+\subsection{Embedding one tree in another}
+\label{s:embed}
+
+The internal implementation of \Qt\ only supports one tree being built at
+one time; hence it does not allow a complete tree to be recursively embedded
+as part of another one. This is not actually needed very often (trees are
+already recursive, after all); for most constructions that seem to require
+it, there's a simpler way to get the same effect. But it might be 
+necessary, for example, if you need to put a subtree under a roof.
+
+Fortunately it's straightforward to embed one tree in another using \TeX's
+facilities, without ever calling \Qt\ recursively. We can do this by saving
+the first tree in a named box, and then using it as part of the larger tree.
+Here's how:
+
+\vneed{6cm}
+\begin{flushleft}
+\footnotesize
+\begin{verbatim}
+\newsavebox{\partbox} % Declare this only once, in your preamble!
+ 
+%% Build the subtree and save it in the box
+\setbox\partbox=\hbox{\Tree [.DP my pony ] }
+
+%% Use the subtree in the containing tree
+\Tree [ how
+  \qroof{about \usebox{\partbox} ...}.PP
+].S
+\end{verbatim}
+
+\vspace{-3.1cm}
+\newsavebox{\partbox} % Declare this only once, in your preamble!
+ 
+%% Build the subtree and save it in the box
+\setbox\partbox=\hbox{\Tree [.DP my pony ] }
+
+\hfill
+%% Use the subtree in the containing tree
+\Tree [ how
+  \qroof{about \usebox{\partbox} ...}.PP
+].S
+\end{flushleft}
+
+
+\subsection{Overriding branch drawing}
+\label{s:bdraw}
+
+\QT\ is designed to produce nice trees automatically; it is not designed for
+fine control over their appearance. Nevertheless, technically inclined users
+could use the \verb|!| escape mechanism to temporarily redefine the
+branch-drawing routine and draw the branches any way they want, specifying
+wavy or dotted lines between selected nodes, arrows at line tips, etc. 
+
+\DescribeMacro{\qdraw@branches}
+The code that draws the lines from a tree node to its daughters
+is encapsulated in the macro \cmd{\qdraw@branches}. 
+It takes one argument, the number of branches, and 
+uses graphics commands to draw a picture containing the branched
+lines. The default drawing is very simple; the actual width of the picture
+is controlled through the value of the 
+parameter \cmd{\unitlength} (see the documentation of the standard \LaTeX\
+environment \verb|{picture}|), which will be set to \emph{half} the
+required distance between the branch tips before \cmd{\qdraw@branches} is
+called. 
+
+In the following simple example we override the macro (and later restore it),
+to shorten the line that connects ``b'' to its parent and add an arrow at its
+end (with \verb|\vector|). Since the custom macro will only be used once, it supports ternary
+branching only and ignores its argument.
+\begin{flushleft}
+  (disabled)
+% \makeatletter
+%   \newcommand{\myLines}[1]{% Three-way only
+%     \begin{picture}(4,1)
+%       \put(0,0){\line(2,1){2}}
+%       \put(2,0){\vector(0,1){0.7}}
+%       \put(4,0){\line(-2,1){2}}
+%     \end{picture}}
+%   \let\qdrawReal=\qdraw@branches
+%   \newcommand\brOverride{\let\qdraw@branches=\myLines}
+%   \newcommand\brRestore{\let\qdraw@branches=\qdrawReal}
+% \small
+%
+% \hfill \Tree [.Top X [.Hub a b [.c left  right ]
+% !{\brOverride} ].Hub !{\brRestore} ].Top
+%
+%\vspace{-3.8cm}
+\begin{verbatim}
+\makeatletter
+  \newcommand{\myLines}[1]{% Three-way only
+  \begin{picture}(4,1)
+    \put(0,0){\line(2,1){2}}
+    \put(2,0){\vector(0,1){0.7}}
+    \put(4,0){\line(-2,1){2}}
+  \end{picture}}
+\let\qdrawReal=\qdraw@branches
+\newcommand\brOverride{\let\qdraw@branches=\myLines}
+\newcommand\brRestore{\let\qdraw@branches=\qdrawReal}
+\makeatother
+
+\Tree [.Top X [.Hub a b [.c left  right ]
+  !{\brOverride} ].Hub !{\brRestore} ].Top
+\end{verbatim}
+\end{flushleft}
+
+The branch-drawing code above is a simple modification of the commands
+found in the style file, but it could be replaced with commands using a
+drawing environment of your choice, and inserting arbitrary graphic elements.
+Note, however, that the horizontal placement of child nodes on the page is
+not affected by what the drawing routine does; drawing wider or narrower
+branch lines will not cause the text to move with them.
+
+
+\subsection{Visualising tree construction}
+
+If you're curious about how \Qt\ assembles leaves and labels into a tree,
+you can try the command \verb|\qtreeshowframes|. It causes trees to
+be drawn with boxes around their leaf nodes and labels; in the example
+below we also add a frame around the entire tree, to show \TeX's idea of its
+bounding box:
+
+\bigskip
+\vneed{4cm}
+\begin{flushleft}
+\small
+\begin{verbatim}
+{ \qtreeshowframes
+  \frame{\Tree [.S This 
+    [.VP [.V is ]
+         [.NP [.D a ] [ simple tree ] ]
+    ]] }}
+\end{verbatim}
+
+\vspace{-2.5cm}
+\leavevmode\hfill { \qtreeshowframes
+  \frame{\Tree [.S This 
+    [.VP [.V is ]
+         [.NP [.D a ] [ simple tree ] ]
+    ]] }}
+\hspace{\tabcolsep}\strut
+\end{flushleft}
+
+
+\subsection{The low-level interface}
+The guts of \Qt\ are the tree macros written by Jeff Siskind, named
+\emph{QobiTree.} Using the original interface (which is still accessible
+with this package) the example tree shown on page \pageref{2b} would be
+written like this:
+
+\begin{center}
+(disabled)
+% \leaf{A}
+%     \leaf{B\\ \em note} \leaf{cc} 
+%     \branch{2}{T}
+% \leaf{D}
+% \branch{3}{S}
+% \hskip 3in \qobitree
+\end{center}
+%\vspace*{-1.5in}
+\begin{verbatim}
+\begin{center}
+\leaf{A}
+    \leaf{B\\ \em note} \leaf{cc} 
+    \branch{2}{T}
+\leaf{D}
+\branch{3}{S}
+\qobitree
+\end{center}
+\end{verbatim}
+
+These macros operate like a stack machine. You push \TeX\ boxes onto the
+stack of tree nodes, then you pop them off to make branching nodes which
+get pushed back on the stack. The \Qt\ front end internally generates these
+commands to build trees.
+
+The command\verb|\branch| requires you to specify the number of stack elements that will be made into children of the new node. The front end uses an internal counter, \verb|\nbranches|, to keep track of how many children a node has.
+
+It is possible, and in some cases even useful, to write your own commands that 
+add bits of tree structure to the qtree stack. The command \verb|\mylex| in the following example formats a singleton branch label in bold above lexical items (in italics), while leaving other branch labels in the default roman font.
+
+{\small
+\begin{verbatim}
+\newcommand\mylex[2]{\advance\nbranches by1 
+    \leaf{\emph{#2}}\branch{1}{\bf #1}}
+
+\Tree [.S !\mylex{N}{John} 
+        [.VP !\mylex{V}{saw} !\mylex{N}{Jane} ]]
+\end{verbatim}}
+\vspace*{-2.7cm}\hfill
+(disabled)
+% \newcommand\mylex[2]{\advance\nbranches by1 \leaf{\emph{#2}}\branch{1}{\bf #1}}
+% \Tree [.S !\mylex{N}{John} [.VP !\mylex{V}{saw} !\mylex{N}{Jane} ] ]
+
+\medskip
+
+We use \verb|!| to bypass the front end, in order to manipulate the tree stack directly. The macro pushes a leaf onto the stack and then includes it under a singleton branch with a bold label. It also increments the counter \verb|\nbranches| to let the front end know that the resulting node has been added to the stack. With some understanding of how qtree works, much more complicated commands are possible. (In extreme cases, you might consider bypassing the front end altogether and relying exclusively on the stack interface).
+
+
+\section{How do I \ldots? (The qtree FAQ)}
+
+\paragraph{Make my tree fit in the page?}  Try one or more of the following:
+reduce the font size with \verb|\small| or another size command,
+\emph{before} you begin the tree; reduce the amount of space between subtrees
+with \verb|\qsetw| or \verb|\faketreewidth|; abbreviate unimportant parts of
+your tree with \verb|\qroof|; consider placing your tree sideways in the page,
+using one of the packages that provide rotation commands.
+
+\paragraph{Draw movement arrows from one node of a tree to another?}
+Use Emma Pease's \pstyle{tree-dvips.sty}, or some other package for drawing
+lines between locations on the page. Despite its name, \pstyle{tree-dvips}
+is not narrowly tailored to creating trees; its many line- and arrow-drawing
+commands can be used to decorate trees drawn with \Qt.
+
+\paragraph{Use \Qt\ with \textsl{pdflatex}?}
+Earlier versions of \Qt\ did not have good pdflatex support. The current
+version supports it through the package \pstyle{pict2e.sty.} If it is not
+already available on your system, it is highly recommended that you install
+it. See section 2 for details.
+
+\paragraph{Place a tree in a footnote, figure, or macro argument?} \QT\ does work in floats, but the \verb|\automath| feature is not available in such environments. If you're having problems, you're probably using sub- or superscripts without switching to math mode. See section~\ref{s:super}.
+
+\paragraph{Center my trees vertically on the baseline?}
+Put them inside a trivial
+\texttt{tabular} environment. (This can be automated with the hooks
+\verb|\qtreeinithook|, \verb|\qtreefinalhook|). To avoid extra whitespace
+around the tree, use the following column specification (see the documentation of \verb|{tabular}| for an explanation):
+
+\verb|\begin{tabular}[c]{@{}l@{}} \Tree ...|
+
+\paragraph{Line up the text from all the leaf nodes on one horizontal line?}
+As far as I can tell, \Qt's design is incompatible with this style of
+tree.  I'd love it if there was an easy way to give \Qt\ this
+capability, but if there is, I haven't figured it out.
+
+\paragraph{Draw dashed or dotted branches between certain nodes?}
+This requires a bit of \LaTeX\ hacking skills, but it can be done. See
+section \ref{s:bdraw} for details.
+
+\paragraph{Automatically select a particular font for branch or leaf labels?}
+Redefine \verb|\qlabelhook| and/or \verb|\qleafhook|. See section
+\ref{s:ftune}. 
+
+\paragraph{Embed one call to \Qt\ inside another?} \QT\ cannot be called
+recursively. If you do need to embed one tree in another (it's very rarely
+necessary), save the smaller tree in a \verb|\savebox| and insert it into
+the bigger one. See section \ref{s:embed} for the details.
+  
+
+\section{Troubleshooting}
+
+\paragraph*{Disclaimer:} 
+I welcome any comments, feature requests, or reports of other problems.
+But as usual, no guarantees, promises, etc.\ can be made about the present or
+future state of this code.  
+
+\paragraph{The placement of trees on the page has changed} Version 3 of \Qt\
+has fixed some bugs in horizontal spacing (most visibly, extra spaces used
+to be inserted before trees), and made countless small adjustments in
+spacing. Trees are now centered exactly on the line, and they generate
+\emph{no} white space around them.\footnote{%
+  If you put a tight box around a tree (using \texttt{\bslash frame}), it will
+  just touch the sides of the tree.
+} % END FOOTNOTE
+ They are thus easy to position and integrate with other visual objects.
+
+Unfortunately, this creates a compatibility problem, as it was not practical
+to provide a ``backwardly compatible'' spacing option. If you have used a
+lot of \verb|\hspace| commands to adjust the placement of your trees, they
+will no longer work properly. On the positive side, it should now be very
+easy to arrange trees the way you want them. If you need to process files that have a lot of old trees with spacing adjustments, you can install the package
+\pstyle{qtree221.sty}, which contains version 2.21 of qtree. The new commands
+and formatting options of \Qt\ version 3 are not available in
+\pstyle{qtree221.sty}.\footnote{\pstyle{qtree221.sty} is not available on CTAN. It can be downloaded from the Qtree home page, http://www.ling.upenn.edu/advice/latex/qtree/.}
+
+The change-over is a one-time incompatibility. Future revisions will
+retain the spacing of version 3.
+
+\paragraph{LaTeX says that pict2e.sty ``will not be written soon''} 
+\pstyle{Pict2e.sty} \emph{has} finally been written. You need to update your \TeX\ distribution or just download the package. If you cannot do that for any reason, load \Qt\ with \verb|\usepackage[noload]{qtree}| to suppress loading of \pstyle{pict2e.sty}.
+
+\paragraph{Some very short lines are not drawn}
+This problem is caused by the limited inventory of line shapes in
+the original \LaTeX\ picture environment.  For example, the tree fragment 
+\verb|[.X a b ]| will produce invisible branch lines from \verb|X| to 
+\verb|a| and~\verb|b|,
+but the lines will reappear if the labels are made wider.  If you use
+\pstyle{pict2e}, the problem should go away.
+
+\paragraph{Some not-so-short lines are not drawn} My dvi previewer (yap)
+sometimes fails to display some lines; but the lines are really there,
+and can be seen at higher magnifications, or when the file is printed or
+converted to PostScript. So it's only a problem with the previewer;
+if it gets in your way, suppress loading of
+\pstyle{pict2e} with  the package option \texttt{[noload]}.
+
+\paragraph{\TeX\ is running out of registers} \QT\ is a real pig for
+counter registers: it uses more than 60 of them. In combination with other
+packages that use a lot (e.g., the \pstyle{memoir} class), this can go over
+the limits of the original \TeX\
+engine. Fortunately most distributions have now quietly switched to using
+e\TeX\ internally, which makes many more registers available (you still
+invoke it simply as \verb|latex|, so you probably don't even know you're
+using it). But you need to tell e\TeX\ that the extra
+registers are there. If you run out of registers, try including the
+package \pstyle{etex.sty} and see if it fixes the problem.\footnote{%
+  If you include \pstyle{etex.sty} and strange things
+start happening, you probably aren't running the e\TeX\ engine; in that case,
+\emph{don't} load \pstyle{etex.sty.} You'll have to install a newer \TeX\
+distribution first. 
+} % END FOOTNOTE
+
+\paragraph{There's too much space below my trees, but only when I use pdflatex}
+Qtree should produce identical output for dvi and pdf. The problem is caused by a bug in older versions of \pstyle{color.sty}, which is loaded internally by many pdf-aware packages.\footnote{The bug is in the redefinition of \texttt{$\backslash$ usebox} in the file \pstyle{pdftex.def}.}
+Update the package \pstyle{color} from CTAN (the entire directory) and the problem will go away.
+
+
+\paragraph{\QT\ will not work with journal style X}
+
+Any number of things could be going wrong, of course, but start by checking if
+the journal's style redefines the {\tt tabular\/} environment.  \QT\
+makes internal calls to {\tt tabular\/}, so this is a frequent source of
+problems.  Usually the style's writer has saved the original definition of
+\verb|\tabular| under a different name, so all you need to do is arrange for
+the original definition to be restored during the calls to \verb|\Tree|.
+
+You can define 
+\verb|\qtreeinithook| to carry out the necessary redefinitions.  It is
+called at the beginning of each call to \verb|\Tree|, with
+local scope (so that any redefinitions it makes are automatically canceled
+at the end of the call to \verb|\Tree|). For example, the JNLE style
+(\pstyle{nle.sty}) saves the standard commands to begin and end a table as 
+\verb|\oldtabular| and \verb|\endoldtabular|, respectively, and the
+replacement macros result in {\it ~r e a l l y ~ w i d e~\/} trees. The
+following will restore the original definitions for calls to \verb|\Tree|
+only.
+\begin{verbatim}
+\def\qtreeinithook{\let\tabular=\oldtabular 
+         \let\endtabular=\endoldtabular}
+\end{verbatim}
+
+Kluwer's house style saves the original definitions as \verb|\klu@tabular| and \verb|\klu@endtabular|; they can be restored in the same way.  (You'll need to use \verb|\makeatletter| since these names contain an \texttt{@}-sign).
+
+\end{document}
+
+% possibilities for the documentation:
+% - expand tree-dvips discussion?
+% - incorporate how-to-draw picture?
+
+
+% I guess we don't need this in the printed manual anymore...
+
+\section{Inspiration}
+Here is a last demo, illustrating some of the things you {\it can\/} do with
+\Qt. 
+(This example, and parts of the above exposition, were adapted from the
+original documentation for \texttt{QobiTree}).
+
+\def\CUP{{\bf cup}}
+\def\Nspec{N$_{\mbox{\sc spec}}$}
+\Tree [.{{\em The cup slid from John to Mary.}\\
+       {GO(\CUP,  $[_{\rm Path}$ FROM({\bf John}), TO({\bf Mary})])}\\IP}
+ [.\fbox{Fracture}
+%
+   [.{{\em The cup}\\\CUP\\NP}
+     [ {{\em The}\\$\bot$\\\Nspec} {{\em cup}\\\CUP\\N} ].\fbox{Fracture}
+   ]
+   [.{{\em slid from John to Mary}\\
+    {GO({\it x},  $[_{\rm Path}$ FROM({\bf John}), TO({\bf Mary})])}\\IP}
+     [ $\vdots$ $\vdots$ !\faketreewidth{WWW} ].\fbox{Fracture}
+   ]
+ ].\fbox{Fracture} % repeated label
+]
+
+{\small
+\begin{verbatim}
+\def\CUP{{\bf cup}}
+\def\Nspec{N$_{\mbox{\sc spec}}$}
+\Tree [.{{\em The cup slid from John to Mary.}\\
+ {GO(\CUP,  $[_{\rm Path}$ FROM({\bf John}), TO({\bf Mary})])}\\IP}
+ [.\fbox{Fracture}
+ %
+  [.{{\em The cup}\\\CUP\\NP}
+   [ {{\em The}\\$\bot$\\\Nspec} {{\em cup}\\\CUP\\N} ].\fbox{Fracture}
+  ]
+  [.{{\em slid from John to Mary}\\
+   {GO({\it x},  $[_{\rm Path}$ FROM({\bf John}), TO({\bf Mary})])}\\IP}
+   [ $\vdots$ $\vdots$ !\faketreewidth{WWW} ].\fbox{Fracture}
+  ]
+ ].\fbox{Fracture} % repeated label
+]
+\end{verbatim}} % end \small
+
+
+\end{document}

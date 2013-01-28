@@ -1,0 +1,207 @@
+\ProvidesPackage{forest-qtree}[2013/01/28 Simulate qtree with forest]
+\RequirePackage{forest}[2013/01/28]
+
+\def\qTreeVersion{3.1b}
+\def\qTreeDate{2008/12/12 }
+
+\newif\ifqtreecenter \qtreecentertrue
+\pgfkeys{/forest-qtree/package@options/.cd,
+  center/.is if=qtreecenter,
+  center/.default=true,
+  nocenter/.style={center=false},
+}
+\ProcessPgfPackageOptions{/forest-qtree/package@options}
+
+%%% convert qtree's syntax to forest syntax
+\def\forest@qtree@do@opening@leaf#1{%
+  \forest@qtree@prepare@leaf#1\forest@qtree@end
+  \edef\forest@qtree@marshal{\noexpand\preto\noexpand\forest@qtree@do@leaves{,prepend={\expandonce\forest@qtree@leaf}}}\forest@qtree@marshal
+}
+\def\forest@qtree@do@closing@leaf#1{%
+  \forest@qtree@prepare@leaf#1\forest@qtree@end
+  \edef\forest@qtree@marshal{\noexpand\appto\noexpand\forest@qtree@do@leaves{,for parent={append={\expandonce\forest@qtree@leaf}}}}\forest@qtree@marshal
+}
+\def\forest@qtree@prepare@leaf#1#2\forest@qtree@end{%
+  \ifx#1\qroof
+    \forest@qtree@prepare@qroof#2\forest@qtree@end
+  \else
+    \def\forest@qtree@leaf{[#1#2]}%
+  \fi
+}
+\def\forest@qtree@prepare@qroof#1.#2\forest@qtree@end{%
+  \def\forest@qtree@leaf{[#2[#1,triangle]]}%
+}
+
+\def\forest@qtree@parse@opening{%
+  \@ifnextchar.{\forest@qtree@parse@label}{\pgfkeysalso{content={}}\forest@qtree@parse@leaf}%
+}
+\def\forest@qtree@parse@closing{%
+  \@ifnextchar.{\forest@qtree@parse@label}{\forest@qtree@parse@leaf}%
+}
+\def\forest@qtree@parse@label.#1 {%
+  \pgfkeysalso{content={#1}}%
+  \forest@qtree@parse@leaf
+}
+\def\forest@qtree@parse@leaf{%[
+  \@ifnextchar]%
+    {\expandafter\pgfkeysalso\expandafter{\forest@qtree@do@leaves}\@gobble}%
+    {\forest@qtree@parse@leaf@}%
+}
+\def\forest@qtree@parse@leaf@#1 {%
+  \forest@qtree@do@leaf{#1}\forest@qtree@parse@leaf
+}
+
+\forestset{
+  qtree/.style={
+    delay={
+      for tree={TeX={%
+          \def\forest@qtree@do@leaves{}%
+          \let\forest@qtree@do@leaf\forest@qtree@do@opening@leaf
+          \edef\forest@qtree@marshal{%[
+            \noexpand\forest@qtree@parse@opening\forestoption{content} ]}%
+          \forest@qtree@marshal
+        }},
+    },
+    afterthought/.style={delay={TeX={%
+      \def\forest@qtree@temp{##1}%
+      \ifx\forest@qtree@temp\pgfkeysnovalue@text\else
+        \def\forest@qtree@do@leaves{}%
+        \let\forest@qtree@do@leaf\forest@qtree@do@closing@leaf
+        \@escapeif{%[
+          \forest@qtree@parse@closing##1 ]%
+        }%
+      \fi
+    }}},
+    TeX={\qtreeprimes@internal},
+    before typesetting nodes={
+      for tree={align=center},
+      where content={}
+        {shape=coordinate,for parent={for children={anchor=north}}}
+        {if n children=0{content format/.wrap value=\qleafhook{##1}}{content format/.wrap value=\qlabelhook{##1}}},
+      baseline,
+    },
+  },
+}
+
+%%% By default, forest uses an environment; qtree's \Tree, however, is
+%%% not delimited at the end.  The following code finds out where the
+%%% tree ends by using forest's bracket parser --- so, forest is
+%%% executed *twice*.
+\def\Tree{%
+  \begingroup
+  \automath
+  \bracketset{
+    action character=!,
+    new node/.code n args={3}{% #1=preamble, #2=node spec, #3=cs receiving the id
+      \forest@node@new##3%
+      \forestOset{##3}{content}{##2}%
+      \ifblank{##1}{}{\def\forest@qtree@preamble{##1}}%
+    },
+    set afterthought/.code 2 args={% #1=node id, #2=afterthought
+      \forestOset{##1}{content format}{##2}% we use just some toks option, it's not important which
+    }
+  }%
+  \def\forest@qtree@preamble{}%
+  \bracketParse{\forest@qtree@checkifroothasafterthought}\forest@qtree@root=%
+}
+\def\forest@qtree@compose@toks{%
+  \eappto\forest@qtree@toks{ [\forestoption{content}}%
+  \forest@node@foreachchild{\forest@qtree@compose@toks}%
+  \eappto\forest@qtree@toks{ ]\forestoption{content format}}%
+}%
+\def\forest@qtree@checkifroothasafterthought{%
+  \@ifnextchar.%
+    {\forest@qtree@roothasafterthought}%
+    {\forestOset{\forest@qtree@root}{content format}{}\forest@qtree@Tree}%
+}
+\def\forest@qtree@roothasafterthought.#1 {%
+  \forestOset{\forest@qtree@root}{content format}{.#1 }%
+  \forest@qtree@Tree  
+}
+\def\forest@qtree@Tree{%
+  \edef\forest@qtree@toks{\noexpand\begin{forest} qtree,
+    \expandonce\forest@qtree@preamble,}%
+  \forest@fornode{\forest@qtree@root}{%
+    \forest@qtree@compose@toks
+  }%
+  \appto\forest@qtree@toks{\end{forest}}%
+  \expandafter\endgroup\forest@qtree@toks
+}
+
+%%% qtree's customization and advanced features
+\bracketset{action character=!}
+\forestset{
+  begin forest/.code=\automath\qtreeinithook\ifqtreecenter\hfil\fi,
+  end forest/.code=\ifqtreecenter\hfil\fi\qtreefinalhook
+}
+\let\qtreeinithook=\relax  % global formatting/definitions hook
+\let\qtreefinalhook=\relax % called just after the tree is output
+\let\qleafhook=\relax     % hook for leaf text 
+\let\qlabelhook=\relax    % hook for non-terminal labels
+\let\qsetw\@gobble
+\let\faketreewidth\@gobble
+\def\qbalance{}
+\newcount\qroofx
+\newcount\qroofy
+\qroofx=3 \qroofy=1
+\def\qroof{\qroof}
+
+\def\qtreeshowframes{\forestset{begin forest/.append style={/tikz/every node/.append style={draw}}}}
+%\qtreenoframes
+
+\forestset{
+  qframesubtree/.style={
+    for previous={
+      %fit=rectangle,
+      tikz+={{\node[draw,fit to tree]{};}}
+    },
+    remove
+  }
+}
+\def\qframesubtree{ {,qframesubtree} }
+
+%%% ^, _ & co ... verbatim from qtree.sty
+{ % Temporarily change catcodes
+  \catcode`\_=\active
+  \catcode`\^=\active
+
+  \global\def\automath{%
+    \catcode`\_=\active
+    \catcode`\^=\active
+    \def_##1{\@ifnextchar^{\automath@two_{##1}}{\ensuremath{\sb{##1}}}}%
+    \def^##1{\@ifnextchar_{\automath@two^{##1}}{\ensuremath{\sp{##1}}}}}
+}
+\def\automath@two#1#2#3#4{\ensuremath{#1{#2}\relax #3{#4}}}
+% Restore default catcodes for ^, _
+\def\noautomath{\catcode`\_=8 \catcode`\^=7 }
+
+% Let \0, \1, \2 produce ^0, $'$, $''$
+% The \rlap results in better centering of the label (ignoring the
+%  superscript)
+\def\qtreeprimes@internal{%
+  \def\0{\ifmmode ^0\else \rlap{$^0$}\fi}%
+  \def\1{\ifmmode '\else \rlap{$'$}\fi}%
+  \def\2{\ifmmode ''\else \rlap{$''$}\fi}%
+}
+
+% Same commands, but without the \rlap feature
+\def\qtreeprimes{%
+  \def\0{\ensuremath{^0}}%
+  \def\1{\ensuremath{'}}%
+  \def\2{\ensuremath{''}}}
+
+%%% makes trees containing a lot of superscripts a bit nicer (only
+%%% [dj$^0$] is changed from the default)
+\forestStandardNode[dj$^0$]
+ {%
+    \forestOve{\csname forest@id@of@standard node\endcsname}{content},%
+    \the\ht\strutbox,\the\pgflinewidth,%
+    \pgfkeysvalueof{/pgf/inner ysep},\pgfkeysvalueof{/pgf/outer ysep},%
+    \pgfkeysvalueof{/pgf/inner xsep},\pgfkeysvalueof{/pgf/outer xsep}%
+  }
+  {
+    l sep={\the\ht\strutbox+\pgfkeysvalueof{/pgf/inner ysep}},
+    l={l_sep()+abs(max_y()-min_y())+2*\pgfkeysvalueof{/pgf/outer ysep}},
+    s sep={2*\pgfkeysvalueof{/pgf/inner xsep}}
+  }
+  {l sep,l,s sep}
