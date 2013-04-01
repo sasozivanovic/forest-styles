@@ -1,0 +1,60 @@
+\RequirePackage{forest}
+\newbox\foreststrutbox
+\setbox\foreststrutbox=\hbox to 0pt{\phantom{\forestOve{standard node}{content}}}
+\def\foreststrut{\copy\foreststrutbox}
+\forestset{
+  GP1/.style 2 args={
+    for n={1}{baseline},
+    s sep=0pt, l sep=0pt,
+    for descendants={
+      l sep=0pt, l={#1},
+      anchor=base,calign=first,child anchor=north,
+      inner xsep=1pt,inner ysep=2pt,outer sep=0pt,s sep=0pt,
+    },
+    delay={
+      if content={}{phantom}{for children={no edge}},
+      for tree={
+        if content={O}{tier=OR}{},
+        if content={R}{tier=OR}{},
+        if content={N}{tier=N}{},
+        if content={x}{
+          tier=x,content={$\times$},outer xsep={#2},
+          for tree={calign=center},
+          for descendants={content format={\foreststrut\forestoption{content}}},
+          before drawing tree={outer xsep=0pt,delay={typeset node}},
+          s sep=4pt
+        }{},
+      },
+    },
+    before drawing tree={where content={}{parent anchor=center,child anchor=center}{}},
+  },
+  GP1/.default={5ex}{8.0pt},
+  associate/.style={%
+    tikz+={\draw(!)--(!#1);}},
+  spread/.style={
+    before drawing tree={tikz+={\draw[dotted](!)--(!#1);}}},
+  govern/.style={
+    before drawing tree={tikz+={\draw[->](!)--(!#1);}}},
+  p-govern/.style={
+    before drawing tree={tikz+={\draw[->](.north) to[out=150,in=30] (!#1.north);}}},
+  no p-govern/.style={
+    before drawing tree={tikz+={\draw[->,loosely dashed](.north) to[out=150,in=30] (!#1.north);}}},
+  encircle/.style={before drawing tree={circle,draw,inner sep=0pt}},
+  fen/.style={pin={[font=\footnotesize,inner sep=1pt,pin edge=<-]10:\textsc{Fen}}},
+  el/.style={content=\textsc{\textbf{##1}}},
+  head/.style={content=\textsc{\textbf{\underline{##1}}}},
+  llap/.style={
+    tikz+={%
+      \edef\forest@temp{\noexpand\node[\option{node options},
+        anchor=base east,at=(.base east)]}%
+      \forest@temp{#1\phantom{\option{environment}}};
+    }
+  },
+  rlap/.style={
+    tikz+={%
+      \edef\forest@temp{\noexpand\node[\option{node options},
+        anchor=base west,at=(.base west)]}%
+      \forest@temp{\phantom{\option{environment}}#1};
+    }
+  },
+}
